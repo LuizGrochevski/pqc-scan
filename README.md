@@ -1,5 +1,7 @@
 # pqc-scan
 
+**English** | [Português (BR)](README.pt-BR.md)
+
 Audit TLS endpoints and X.509 certificates for **quantum-vulnerable cryptography** and report what to migrate to the NIST post-quantum standards (ML-KEM, ML-DSA, SLH-DSA).
 
 Written in Rust. One binary, JSON output, and a `--fail-on` flag so it can gate a CI pipeline.
