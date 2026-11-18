@@ -21,7 +21,7 @@ O `pqc-scan` verifica as duas e mostra qual é qual.
 cargo install --path .
 ```
 
-Requer uma toolchain Rust estável recente. A stack TLS (`rustls` com o provider `aws-lc-rs`) precisa de um compilador C e, em algumas plataformas, de CMake. No Termux: `pkg install cmake clang`.
+Requer uma toolchain Rust estável recente. A stack TLS (`rustls` com o provider `aws-lc-rs`) precisa de um compilador C e, em algumas plataformas, de CMake. No Termux: `pkg install cmake clang make perl` e compile com `cargo build --release`; o build em modo debug (`cargo build` / `cargo test`) pode abortar no linker do Android.
 
 ## Uso
 
@@ -34,28 +34,44 @@ pqc-scan cert <ARQUIVO>... [--json] [--fail-on vulnerable|critical]
 
 ### Escanear um endpoint ao vivo
 
-Faz o handshake com o servidor oferecendo o grupo híbrido `X25519MLKEM768` e audita a troca de chaves negociada e todos os certificados da cadeia. Abaixo, o scan de um servidor de teste OpenSSL local (a saída da ferramenta é em inglês):
+Faz o handshake com o servidor oferecendo o grupo híbrido `X25519MLKEM768` e audita a troca de chaves negociada e todos os certificados da cadeia. Dois scans reais de 17/11/2026 (saída resumida; o resultado depende de como cada servidor está configurado no dia; a saída da ferramenta é em inglês):
 
 ```text
-$ pqc-scan host 127.0.0.1:14443
-pqc-scan · 127.0.0.1:14443
-TLSv1.3 · TLS13_AES_256_GCM_SHA384 · key exchange: X25519
+$ pqc-scan host cloudflare.com
+pqc-scan · cloudflare.com:443
+TLSv1.3 · TLS13_AES_256_GCM_SHA384 · key exchange: X25519MLKEM768
+
+Connection
+  [QUANTUM-SAFE] key exchange: X25519MLKEM768
+      Hybrid post-quantum key exchange: recorded traffic stays protected against future quantum decryption.
+
+Certificate #0 (leaf) — CN=cloudflare.com
+  issuer:  C=US, O=Google Trust Services, CN=WE1
+  expires: Feb  1 23:47:08 2027 +00:00
+  [QUANTUM-VULNERABLE] public key: ECDSA/EC P-256
+      Broken by Shor's algorithm on a cryptographically relevant quantum computer, regardless of key size.
+      → Plan a migration to ML-DSA (FIPS 204) or SLH-DSA (FIPS 205); use hybrid/composite certificates during the transition.
+  [QUANTUM-VULNERABLE] signature: ECDSA with SHA-256
+      [...]
+
+[2 intermediate certificates trimmed]
+
+Summary: 0 critical · 6 quantum-vulnerable · 0 info · 1 quantum-safe
+```
+
+```text
+$ pqc-scan host github.com
+pqc-scan · github.com:443
+TLSv1.3 · TLS13_AES_128_GCM_SHA256 · key exchange: X25519
 
 Connection
   [QUANTUM-VULNERABLE] key exchange: X25519
       Classical key exchange: traffic recorded today can be decrypted once a quantum computer exists ("harvest now, decrypt later"). The client offered X25519MLKEM768 and the server did not select it.
       → Enable the hybrid X25519MLKEM768 group (TLS 1.3) on the server or TLS terminator.
 
-Certificate #0 (root) — CN=localhost
-  issuer:  CN=localhost
-  expires: Nov 19 12:27:39 2026 +00:00
-  [QUANTUM-VULNERABLE] public key: ECDSA/EC P-256
-      Broken by Shor's algorithm on a cryptographically relevant quantum computer, regardless of key size.
-      → Plan a migration to ML-DSA (FIPS 204) or SLH-DSA (FIPS 205); use hybrid/composite certificates during the transition.
-  [INFO] signature: ECDSA with SHA-256
-      Self-signature on a trust anchor is not verified by relying parties, so it has no practical effect.
+[certificates trimmed]
 
-Summary: 0 critical · 2 quantum-vulnerable · 1 info · 0 quantum-safe
+Summary: 0 critical · 7 quantum-vulnerable · 0 info · 0 quantum-safe
 ```
 
 ### Escanear arquivos de certificado
